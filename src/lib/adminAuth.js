@@ -30,6 +30,22 @@ export function getSessionToken() {
   return createSessionToken();
 }
 
+// Minimal cookie serializer (avoids depending on the "cookie" package, whose
+// v2 release ships as ESM-only and doesn't interop reliably with Next's
+// serverless function bundling).
+export function serializeCookie(name, value, options = {}) {
+  const parts = [`${name}=${encodeURIComponent(value)}`];
+  if (options.maxAge != null) parts.push(`Max-Age=${Math.floor(options.maxAge)}`);
+  if (options.path) parts.push(`Path=${options.path}`);
+  if (options.sameSite) {
+    const s = options.sameSite;
+    parts.push(`SameSite=${s.charAt(0).toUpperCase()}${s.slice(1)}`);
+  }
+  if (options.httpOnly) parts.push("HttpOnly");
+  if (options.secure) parts.push("Secure");
+  return parts.join("; ");
+}
+
 function parseCookies(cookieHeader) {
   const out = {};
   if (!cookieHeader) return out;
