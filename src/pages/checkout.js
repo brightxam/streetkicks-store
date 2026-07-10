@@ -91,12 +91,12 @@ export default function CheckoutPage() {
         <title>Оформление заказа - STREETKICKS</title>
       </Head>
       <div
+        className="checkout-page"
         style={{
           minHeight: "100vh",
           background: "#fafafa",
           fontFamily:
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif",
-          padding: "40px 20px",
         }}
       >
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
@@ -177,13 +177,7 @@ export default function CheckoutPage() {
               </p>
             </div>
           ) : (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1.1fr 1fr",
-                gap: "24px",
-              }}
-            >
+            <div className="checkout-grid">
               {/* Order summary */}
               <div
                 style={{
@@ -227,9 +221,10 @@ export default function CheckoutPage() {
                         objectFit: "contain",
                         background: "#f5f5f5",
                         borderRadius: 8,
+                        flexShrink: 0,
                       }}
                     />
-                    <div style={{ flex: 1, fontSize: "13px" }}>
+                    <div style={{ flex: 1, fontSize: "13px", minWidth: 0 }}>
                       <div style={{ fontWeight: 600 }}>{it.title}</div>
                       <div style={{ color: "#888", fontSize: "12px" }}>
                         {it.qty} шт · {it.price || "Цена по запросу"}
@@ -468,6 +463,25 @@ export default function CheckoutPage() {
           )}
         </div>
       </div>
+
+      <style jsx>{`
+        .checkout-page {
+          padding: 40px 20px;
+        }
+        .checkout-grid {
+          display: grid;
+          grid-template-columns: 1.1fr 1fr;
+          gap: 24px;
+        }
+        @media (max-width: 720px) {
+          .checkout-page {
+            padding: 20px 14px;
+          }
+          .checkout-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </>
   );
 }
