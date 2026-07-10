@@ -11,6 +11,7 @@ const islandTransition = {
   mass: 1,
 };
 const ACCENT = "#ff3d1a";
+const SIZES = ["38", "39", "40", "41", "42", "43", "44", "45", "46"];
 
 export function UnifiedControlBar({
   currentCollection,
@@ -19,15 +20,26 @@ export function UnifiedControlBar({
   isZoomedIn,
   hasActiveSelection,
   activeShoe,
+  isHoveringActive,
   nikeFilter,
   onFilterChange,
 }) {
   const { addItem } = useCart();
   const [justAdded, setJustAdded] = React.useState(false);
+  const [selectedSize, setSelectedSize] = React.useState(null);
+
+  // Reset the chosen size whenever the active selection changes (new shoe,
+  // or deselected), so a size never silently carries over to another shoe.
+  const activeKey = activeShoe
+    ? activeShoe.product_url || activeShoe.title
+    : null;
+  React.useEffect(() => {
+    setSelectedSize(null);
+  }, [activeKey]);
 
   const handleAddToCart = () => {
-    if (!activeShoe) return;
-    addItem(activeShoe);
+    if (!activeShoe || !selectedSize) return;
+    addItem(activeShoe, selectedSize);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1400);
   };
@@ -73,15 +85,15 @@ export function UnifiedControlBar({
             "linear-gradient(135deg, rgba(255, 240, 235, 0.4) 0%, rgba(255, 255, 255, 0.3) 50%, rgba(245, 235, 255, 0.4) 100%)", // Very subtle orange to purple gradient for glassy depth
           backdropFilter: "blur(40px) saturate(200%)", // Increased blur for more glassy feel
           WebkitBackdropFilter: "blur(40px) saturate(200%)", // Safari support
-          borderRadius: "32px",
+          borderRadius: hasActiveSelection ? "26px" : "32px",
           border: "1px solid rgba(255, 255, 255, 0.3)", // Subtle white border for glass edge
           boxShadow:
             "0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)", // Soft shadow + inner highlight
-          padding: "6px",
+          padding: hasActiveSelection ? "14px 16px" : "6px",
           display: "flex",
           alignItems: "center",
           pointerEvents: "auto",
-          height: "56px",
+          height: hasActiveSelection ? "auto" : "56px",
           overflow: "hidden", // Crucial for clipping content during resize
         }}
       >
@@ -93,7 +105,7 @@ export function UnifiedControlBar({
         <AnimatePresence mode="popLayout" initial={false}>
           {hasActiveSelection ? (
             /* ---------------- STATE 1: ADD TO CART (Active Selection) ---------------- */
-            <motion.button
+            <motion.div
               key="buy-now-mode"
               initial={{
                 opacity: 0,
@@ -114,26 +126,114 @@ export function UnifiedControlBar({
                 ...islandTransition,
                 opacity: { duration: 0.2 },
               }}
-              onClick={handleAddToCart}
               style={{
-                background: justAdded ? "#16a34a" : ACCENT,
-                color: "#fff",
-                border: "none",
-                borderRadius: "24px",
-                padding: "0 24px",
-                height: "44px",
-                fontSize: "14px",
-                fontWeight: "600",
-                cursor: "pointer",
                 display: "flex",
-                alignItems: "center",
-                whiteSpace: "nowrap",
-                transition: "background 0.2s ease",
+                flexDirection: "column",
+                gap: "10px",
+                minWidth: "280px",
+                maxWidth: "340px",
               }}
-              whileTap={{ scale: 0.95 }}
             >
-              {justAdded ? "Добавлено ✓" : "В корзину"}
-            </motion.button>
+              {/* Shoe title + full details, revealed on hover of the active tile */}
+              {activeShoe && (
+                <div style={{ padding: "0 4px" }}>
+                  <div
+                    style={{
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#111",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {activeShoe.title}
+                  </div>
+                  <AnimatePresence>
+                    {isHoveringActive && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.18 }}
+                        style={{
+                          fontSize: "11px",
+                          color: "#777",
+                          marginTop: "2px",
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "4px",
+                        }}
+                      >
+                        {activeShoe.brand && (
+                          <span>{activeShoe.brand}</span>
+                        )}
+                        {activeShoe.primary_color && (
+                          <span>· {activeShoe.primary_color}</span>
+                        )}
+                        {activeShoe.price && (
+                          <span style={{ color: "#333", fontWeight: 600 }}>
+                            · {activeShoe.price}
+                          </span>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {/* Size picker - required before Add to Cart */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: "5px",
+                  flexWrap: "wrap",
+                  padding: "0 4px",
+                }}
+              >
+                {SIZES.map((sz) => (
+                  <SizeChip
+                    key={sz}
+                    isActive={selectedSize === sz}
+                    onClick={() => setSelectedSize(sz)}
+                  >
+                    {sz}
+                  </SizeChip>
+                ))}
+              </div>
+
+              <motion.button
+                onClick={handleAddToCart}
+                disabled={!selectedSize}
+                style={{
+                  background: justAdded
+                    ? "#16a34a"
+                    : selectedSize
+                    ? ACCENT
+                    : "rgba(0,0,0,0.12)",
+                  color: selectedSize ? "#fff" : "#999",
+                  border: "none",
+                  borderRadius: "20px",
+                  padding: "0 20px",
+                  height: "40px",
+                  fontSize: "13px",
+                  fontWeight: "600",
+                  cursor: selectedSize ? "pointer" : "not-allowed",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  whiteSpace: "nowrap",
+                  transition: "background 0.2s ease, color 0.2s ease",
+                }}
+                whileTap={selectedSize ? { scale: 0.95 } : {}}
+              >
+                {justAdded
+                  ? "Добавлено ✓"
+                  : selectedSize
+                  ? "В корзину"
+                  : "Выберите размер"}
+              </motion.button>
+            </motion.div>
           ) : isZoomedIn ? (
             /* ---------------- STATE 2: COMPACT (Zoomed In) ---------------- */
             <motion.div
@@ -342,26 +442,17 @@ export function UnifiedControlBar({
             bottom: 24px !important;
           }
           .control-bar-island {
-            height: 48px !important;
             border-radius: 24px !important;
-            padding: 4px !important;
           }
         }
         @media (max-height: 650px) {
           .control-bar-container {
             bottom: 16px !important;
           }
-          .control-bar-island {
-            height: 44px !important;
-          }
         }
         @media (max-width: 768px) {
           .control-bar-container {
             bottom: 20px !important;
-          }
-          .control-bar-island {
-            height: 48px !important;
-            padding: 4px !important;
           }
           .desktop-filters {
             display: none !important;
@@ -374,9 +465,6 @@ export function UnifiedControlBar({
           .control-bar-container {
             bottom: 16px !important;
           }
-          .control-bar-island {
-            height: 44px !important;
-          }
           .control-button {
             width: 36px !important;
             height: 36px !important;
@@ -388,6 +476,11 @@ export function UnifiedControlBar({
           .filter-chip {
             padding: 4px 8px !important;
             font-size: 11px !important;
+          }
+          .size-chip {
+            padding: 5px 8px !important;
+            font-size: 11px !important;
+            min-width: 26px !important;
           }
           .mobile-filters {
             bottom: 60px !important;
@@ -554,5 +647,31 @@ function FilterChip({ children, isActive, onClick, layoutGroup = "default" }) {
       )}
       {children}
     </motion.button>
+  );
+}
+
+function SizeChip({ children, isActive, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="size-chip"
+      style={{
+        border: isActive
+          ? `1px solid ${ACCENT}`
+          : "1px solid rgba(0,0,0,0.15)",
+        background: isActive ? ACCENT : "rgba(255,255,255,0.6)",
+        color: isActive ? "#fff" : "#333",
+        padding: "6px 10px",
+        borderRadius: "10px",
+        fontSize: "12px",
+        fontWeight: 600,
+        cursor: "pointer",
+        minWidth: "30px",
+        textAlign: "center",
+        transition: "background 0.15s ease, color 0.15s ease, border 0.15s ease",
+      }}
+    >
+      {children}
+    </button>
   );
 }

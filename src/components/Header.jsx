@@ -48,11 +48,12 @@ export default function Header() {
               style={{
                 fontFamily:
                   "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                fontSize: "15px",
-                fontWeight: "700",
-                letterSpacing: "0.12em",
+                fontSize: "26px",
+                fontWeight: "900",
+                letterSpacing: "0.04em",
                 color: "#000",
                 textTransform: "uppercase",
+                lineHeight: 1,
               }}
             >
               STREET
@@ -61,11 +62,12 @@ export default function Header() {
               style={{
                 fontFamily:
                   "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                fontSize: "15px",
-                fontWeight: "700",
-                letterSpacing: "0.12em",
+                fontSize: "26px",
+                fontWeight: "900",
+                letterSpacing: "0.04em",
                 color: ACCENT,
                 textTransform: "uppercase",
+                lineHeight: 1,
               }}
             >
               KICKS
@@ -75,12 +77,12 @@ export default function Header() {
             style={{
               fontFamily:
                 "'Helvetica Neue', Helvetica, Arial, sans-serif",
-              fontSize: "8px",
-              fontWeight: "400",
+              fontSize: "9px",
+              fontWeight: "500",
               letterSpacing: "0.2em",
               color: "#999",
               textTransform: "uppercase",
-              marginTop: "-1px",
+              marginTop: "2px",
             }}
           >
             streetkickscom

@@ -128,6 +128,7 @@ export function CartDrawer() {
                       </div>
                       <div style={{ fontSize: "12px", color: "#888", marginTop: 2 }}>
                         {it.price || "Цена по запросу"}
+                        {it.size && ` · Размер ${it.size}`}
                       </div>
                       <div
                         style={{
