@@ -6,14 +6,14 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { items, customer, paymentMethod } = req.body || {};
+  const { items, customer, paymentMethod, discountCode, total } = req.body || {};
 
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: "Cart is empty" });
   }
 
   try {
-    const result = await createCheckoutSession({ items, customer, paymentMethod });
+    const result = await createCheckoutSession({ items, customer, paymentMethod, discountCode, total });
     return res.status(200).json(result);
   } catch (err) {
     console.error("Checkout error:", err);
