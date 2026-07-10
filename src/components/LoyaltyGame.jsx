@@ -105,207 +105,242 @@ export default function LoyaltyGame() {
               style={{
                 position: "fixed",
                 inset: 0,
-                background: "rgba(0,0,0,0.5)",
+                background: "rgba(0,0,0,0.55)",
                 zIndex: 300,
               }}
             />
-            <motion.div
-              key="loyalty-modal"
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+            {/* Plain (non-animated) full-viewport flex wrapper handles centering.
+                Framer Motion takes exclusive ownership of the CSS `transform`
+                property on animated elements, so combining a manual
+                translate(-50%,-50%) centering hack with motion-driven
+                scale/y animations on the SAME element silently breaks the
+                centering (the element ends up offset by half its own size,
+                which is what was pushing this modal off-screen on mobile).
+                Centering the modal with flexbox on an uninvolved parent
+                sidesteps that conflict entirely. */}
+            <div
               style={{
                 position: "fixed",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
+                inset: 0,
                 zIndex: 301,
-                background: "#fff",
-                borderRadius: "20px",
-                padding: "28px",
-                width: "min(360px, 92vw)",
-                textAlign: "center",
-                fontFamily:
-                  "'Helvetica Neue', Helvetica, Arial, sans-serif",
-                boxShadow: "0 24px 60px rgba(0,0,0,0.25)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "16px",
+                pointerEvents: "none",
               }}
             >
-              <button
-                onClick={() => setOpen(false)}
-                aria-label="Закрыть"
+              <motion.div
+                key="loyalty-modal"
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: "spring", stiffness: 320, damping: 28 }}
                 style={{
-                  position: "absolute",
-                  top: "14px",
-                  right: "14px",
-                  border: "none",
-                  background: "transparent",
-                  fontSize: "18px",
-                  cursor: "pointer",
-                  color: "#999",
-                }}
-              >
-                ✕
-              </button>
-
-              <h2
-                style={{
-                  fontSize: "17px",
-                  fontWeight: 800,
-                  margin: "0 0 4px",
-                  letterSpacing: "0.02em",
-                }}
-              >
-                Колесо призов STREETKICKS
-              </h2>
-              <p style={{ fontSize: "12px", color: "#888", marginBottom: "20px" }}>
-                Один бесплатный спин в день — выигрывайте скидку на заказ.
-              </p>
-
-              <div
-                style={{
+                  pointerEvents: "auto",
+                  background: "#fff",
+                  borderRadius: "20px",
+                  padding: "26px 20px",
+                  width: "min(340px, 100%)",
+                  maxHeight: "calc(100vh - 32px)",
+                  overflowY: "auto",
+                  textAlign: "center",
+                  fontFamily:
+                    "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                  boxShadow: "0 24px 60px rgba(0,0,0,0.3)",
                   position: "relative",
-                  width: "220px",
-                  height: "220px",
-                  margin: "0 auto 20px",
                 }}
               >
-                {/* Pointer */}
-                <div
+                <button
+                  onClick={() => setOpen(false)}
+                  aria-label="Закрыть"
                   style={{
                     position: "absolute",
-                    top: "-6px",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 0,
-                    height: 0,
-                    borderLeft: "10px solid transparent",
-                    borderRight: "10px solid transparent",
-                    borderTop: `16px solid ${ACCENT}`,
-                    zIndex: 2,
-                  }}
-                />
-                <motion.div
-                  animate={{ rotate: rotation }}
-                  transition={{ duration: 3, ease: [0.17, 0.67, 0.32, 1.0] }}
-                  style={{
-                    width: "220px",
-                    height: "220px",
+                    top: "12px",
+                    right: "12px",
+                    border: "none",
+                    background: "#f2f2f2",
+                    width: "28px",
+                    height: "28px",
                     borderRadius: "50%",
-                    background: gradient,
-                    border: "4px solid #fff",
-                    boxShadow: "0 0 0 2px rgba(0,0,0,0.08)",
-                    position: "relative",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    color: "#777",
+                    lineHeight: 1,
                   }}
                 >
-                  {PRIZES.map((p, i) => {
-                    const angle = i * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
-                    return (
-                      <div
-                        key={p.label}
-                        style={{
-                          position: "absolute",
-                          top: "50%",
-                          left: "50%",
-                          width: "90px",
-                          textAlign: "center",
-                          fontSize: "9px",
-                          fontWeight: 700,
-                          color: p.color === "#efe9e4" ? "#333" : "#fff",
-                          whiteSpace: "pre-line",
-                          transform: `rotate(${angle}deg) translate(0, -88px) rotate(0deg)`,
-                          transformOrigin: "top left",
-                          lineHeight: 1.2,
-                        }}
-                      >
-                        {p.label}
-                      </div>
-                    );
-                  })}
-                </motion.div>
+                  ✕
+                </button>
+
+                <h2
+                  style={{
+                    fontSize: "16px",
+                    fontWeight: 800,
+                    margin: "0 0 4px",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  Колесо призов STREETKICKS
+                </h2>
+                <p style={{ fontSize: "12px", color: "#888", margin: "0 0 20px" }}>
+                  Один бесплатный спин в день — выигрывайте скидку на заказ.
+                </p>
+
                 <div
                   style={{
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: "36px",
-                    height: "36px",
-                    borderRadius: "50%",
-                    background: "#fff",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-                    zIndex: 1,
+                    position: "relative",
+                    width: "min(220px, 62vw)",
+                    aspectRatio: "1 / 1",
+                    margin: "0 auto 22px",
                   }}
-                />
-              </div>
-
-              {result ? (
-                <div>
+                >
+                  {/* Pointer */}
                   <div
                     style={{
-                      fontSize: "15px",
-                      fontWeight: 800,
-                      color: result.code ? ACCENT : "#555",
-                      marginBottom: "6px",
+                      position: "absolute",
+                      top: "-7px",
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      width: 0,
+                      height: 0,
+                      borderLeft: "9px solid transparent",
+                      borderRight: "9px solid transparent",
+                      borderTop: `15px solid ${ACCENT}`,
+                      filter: "drop-shadow(0 2px 2px rgba(0,0,0,0.15))",
+                      zIndex: 2,
+                    }}
+                  />
+                  <motion.div
+                    animate={{ rotate: rotation }}
+                    transition={{ duration: 3, ease: [0.17, 0.67, 0.32, 1.0] }}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      background: gradient,
+                      border: "5px solid #fff",
+                      boxShadow:
+                        "0 0 0 2px rgba(0,0,0,0.08), 0 10px 30px rgba(0,0,0,0.15)",
+                      position: "relative",
                     }}
                   >
-                    {result.code
-                      ? `Вы выиграли: ${result.label.replace("\n", " ")}!`
-                      : "В этот раз не повезло"}
-                  </div>
-                  {result.code && (
-                    <p style={{ fontSize: "12px", color: "#666" }}>
-                      Код <strong>{result.code}</strong> уже применён и
-                      сохранён — используйте его при оформлении заказа.
-                    </p>
-                  )}
-                  <button
-                    onClick={() => setOpen(false)}
+                    {PRIZES.map((p, i) => {
+                      const angle = i * SEGMENT_ANGLE + SEGMENT_ANGLE / 2;
+                      return (
+                        <div
+                          key={p.label}
+                          style={{
+                            position: "absolute",
+                            top: "50%",
+                            left: "50%",
+                            width: "72px",
+                            marginLeft: "-36px",
+                            textAlign: "center",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            color: p.color === "#efe9e4" ? "#333" : "#fff",
+                            whiteSpace: "pre-line",
+                            // Rotate out to the segment, slide out along the
+                            // radius, then rotate BACK by the same amount so
+                            // the label itself always reads upright instead
+                            // of sideways/upside-down.
+                            transform: `rotate(${angle}deg) translate(0, -38%) rotate(${-angle}deg)`,
+                            transformOrigin: "center",
+                            lineHeight: 1.25,
+                          }}
+                        >
+                          {p.label}
+                        </div>
+                      );
+                    })}
+                  </motion.div>
+                  <div
                     style={{
-                      marginTop: "14px",
-                      background: "#111",
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      transform: "translate(-50%, -50%)",
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "50%",
+                      background: "#fff",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                      zIndex: 1,
+                    }}
+                  />
+                </div>
+
+                {result ? (
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: 800,
+                        color: result.code ? ACCENT : "#555",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      {result.code
+                        ? `Вы выиграли: ${result.label.replace("\n", " ")}!`
+                        : "В этот раз не повезло"}
+                    </div>
+                    {result.code && (
+                      <p style={{ fontSize: "12px", color: "#666" }}>
+                        Код <strong>{result.code}</strong> уже применён и
+                        сохранён — используйте его при оформлении заказа.
+                      </p>
+                    )}
+                    <button
+                      onClick={() => setOpen(false)}
+                      style={{
+                        marginTop: "14px",
+                        background: "#111",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "999px",
+                        padding: "10px 22px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Готово
+                    </button>
+                  </div>
+                ) : hasSpunToday ? (
+                  <div>
+                    <p style={{ fontSize: "12px", color: "#666" }}>
+                      {activePrize
+                        ? `Сегодня вы уже выиграли код ${activePrize.code}. Возвращайтесь завтра за новым спином!`
+                        : "Вы уже крутили колесо сегодня. Возвращайтесь завтра!"}
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleSpin}
+                    disabled={spinning}
+                    style={{
+                      background: ACCENT,
                       color: "#fff",
                       border: "none",
                       borderRadius: "999px",
-                      padding: "10px 22px",
-                      fontSize: "12px",
+                      padding: "12px 28px",
+                      fontSize: "13px",
                       fontWeight: 700,
-                      cursor: "pointer",
+                      letterSpacing: "0.03em",
+                      textTransform: "uppercase",
+                      cursor: spinning ? "default" : "pointer",
+                      opacity: spinning ? 0.6 : 1,
+                      boxShadow: spinning
+                        ? "none"
+                        : "0 6px 18px rgba(255,61,26,0.35)",
                     }}
                   >
-                    Готово
+                    {spinning ? "Крутим…" : "Крутить"}
                   </button>
-                </div>
-              ) : hasSpunToday ? (
-                <div>
-                  <p style={{ fontSize: "12px", color: "#666" }}>
-                    {activePrize
-                      ? `Сегодня вы уже выиграли код ${activePrize.code}. Возвращайтесь завтра за новым спином!`
-                      : "Вы уже крутили колесо сегодня. Возвращайтесь завтра!"}
-                  </p>
-                </div>
-              ) : (
-                <button
-                  onClick={handleSpin}
-                  disabled={spinning}
-                  style={{
-                    background: ACCENT,
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "999px",
-                    padding: "12px 28px",
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    letterSpacing: "0.03em",
-                    textTransform: "uppercase",
-                    cursor: spinning ? "default" : "pointer",
-                    opacity: spinning ? 0.6 : 1,
-                  }}
-                >
-                  {spinning ? "Крутим…" : "Крутить"}
-                </button>
-              )}
-            </motion.div>
+                )}
+              </motion.div>
+            </div>
           </>
         )}
       </AnimatePresence>
