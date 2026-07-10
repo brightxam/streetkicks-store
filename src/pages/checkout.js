@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { formatRub } from "@/lib/currency";
 import { BANK_DETAILS } from "@/lib/payments";
+import { getActivePrize, applyDiscount, clearActivePrize } from "@/lib/loyalty";
 
 const ACCENT = "#ff3d1a";
 
@@ -16,6 +17,13 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [activePrize, setActivePrize] = useState(null);
+
+  useEffect(() => {
+    setActivePrize(getActivePrize());
+  }, []);
+
+  const total = activePrize ? applyDiscount(subtotal, activePrize) : subtotal;
 
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
@@ -28,7 +36,7 @@ export default function CheckoutPage() {
     let cancelled = false;
     import("qrcode").then((QRCode) => {
       const payload = `STREETKICKS PAYMENT\nAmount: ${formatRub(
-        subtotal
+        total
       )}\nItems: ${items.reduce((n, it) => n + it.qty, 0)}\nRef: ${form.phone || "—"}`;
       QRCode.toDataURL(payload, { width: 220, margin: 1 }).then((url) => {
         if (!cancelled) setQrDataUrl(url);
@@ -37,10 +45,10 @@ export default function CheckoutPage() {
     return () => {
       cancelled = true;
     };
-  }, [method, items, subtotal, form.phone]);
+  }, [method, items, total, form.phone]);
 
   const copyBankDetails = () => {
-    const text = `Получатель: ${BANK_DETAILS.recipient}\nБанк: ${BANK_DETAILS.bank}\nСчёт: ${BANK_DETAILS.account}\nИНН: ${BANK_DETAILS.inn}\nБИК: ${BANK_DETAILS.bic}\nСумма: ${formatRub(subtotal)}`;
+    const text = `Получатель: ${BANK_DETAILS.recipient}\nБанк: ${BANK_DETAILS.bank}\nСчёт: ${BANK_DETAILS.account}\nИНН: ${BANK_DETAILS.inn}\nБИК: ${BANK_DETAILS.bic}\nСумма: ${formatRub(total)}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text);
       setCopied(true);
@@ -56,12 +64,20 @@ export default function CheckoutPage() {
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items, customer: form, paymentMethod: method }),
+        body: JSON.stringify({
+          items,
+          customer: form,
+          paymentMethod: method,
+          discountCode: activePrize?.code || null,
+          total,
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Checkout failed");
       setOrder(data);
       clearCart();
+      clearActivePrize();
+      setActivePrize(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -217,6 +233,7 @@ export default function CheckoutPage() {
                       <div style={{ fontWeight: 600 }}>{it.title}</div>
                       <div style={{ color: "#888", fontSize: "12px" }}>
                         {it.qty} шт · {it.price || "Цена по запросу"}
+                        {it.size && ` · Размер ${it.size}`}
                       </div>
                     </div>
                     <button
@@ -233,6 +250,20 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                 ))}
+                {activePrize && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      marginTop: "12px",
+                      fontSize: "12px",
+                      color: ACCENT,
+                    }}
+                  >
+                    <span>Промокод {activePrize.code}</span>
+                    <span>−{formatRub(subtotal - total)}</span>
+                  </div>
+                )}
                 <div
                   style={{
                     display: "flex",
@@ -243,7 +274,7 @@ export default function CheckoutPage() {
                   }}
                 >
                   <span>Итого</span>
-                  <span>{formatRub(subtotal)}</span>
+                  <span>{formatRub(total)}</span>
                 </div>
                 <p style={{ fontSize: "11px", color: "#aaa", marginTop: 10 }}>
                   Доставка по Москве уточняется менеджером после оформления.
@@ -346,7 +377,7 @@ export default function CheckoutPage() {
                     )}
                     <p style={{ fontSize: "12px", color: "#666", marginTop: 10 }}>
                       Отсканируйте в приложении банка для оплаты через СБП на
-                      сумму {formatRub(subtotal)}.
+                      сумму {formatRub(total)}.
                     </p>
                   </div>
                 ) : (
@@ -366,7 +397,7 @@ export default function CheckoutPage() {
                     <div>ИНН: {BANK_DETAILS.inn}</div>
                     <div>БИК: {BANK_DETAILS.bic}</div>
                     <div style={{ fontWeight: 700, marginTop: 6 }}>
-                      Сумма: {formatRub(subtotal)}
+                      Сумма: {formatRub(total)}
                     </div>
                     <button
                       type="button"
