@@ -9,8 +9,7 @@ import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { Leva } from "leva";
 // --- REAL DATA IMPORT ---
-import rawShoes from "../../../backend/shoes.json";
-import { usdToRubLabel } from "@/lib/currency";
+import shoes from "../../../backend/shoes.json";
 import MiniMap from "../MiniMap";
 import { DEFAULT_CONFIG, CONFIG } from "./gridConfig";
 import { rigState, calculateGridDimensions, EMPTY_COLORS, matchesFilter } from "./gridState";
@@ -21,15 +20,6 @@ import { UnifiedControlBar } from "../GridUI";
 import Header from "../Header";
 import { TopologyBackground } from "../TopologyBackground";
 import "../HoloCardMaterial"; // Registers <holoCardMaterial /> with R3F
-
-// --- CONVERT DEMO PRICES TO RUB ---
-// backend/shoes.json ships with USD-style demo prices ("$69"). This store is
-// priced in RUB, so we convert once here and every downstream component
-// (3D tile labels, cart, checkout) just displays RUB consistently.
-const shoes = rawShoes.map((s) => ({
-    ...s,
-    price: usdToRubLabel(s.price),
-}));
 
 // --- PRELOAD ALL TEXTURES ---
 // This ensures all shoe images are cached before switching collections
@@ -59,6 +49,15 @@ export default function ShoeGrid() {
         const interval = setInterval(() => {
             setHasActiveSelection(rigState.activeId !== null);
         }, 16); // Update every frame (60fps) for smoother updates
+        return () => clearInterval(interval);
+    }, []);
+    // Track whether the pointer is hovering the active/selected tile
+    // (used to reveal the full detail panel in the control bar)
+    const [isHoveringActive, setIsHoveringActive] = useState(false);
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setIsHoveringActive(!!rigState.hoveredActive);
+        }, 50);
         return () => clearInterval(interval);
     }, []);
     const isZoomedIn = currentZoom <= CONFIG.zoomIn + 0.5;
@@ -107,13 +106,12 @@ export default function ShoeGrid() {
                 product_url: `${s.product_url}-dup-${i}`,
             })),
         ];
-        // Under $150 (all brands) — filter is applied against the original
-        // USD demo price before RUB conversion for a stable threshold
+        // Under $150 (all brands)
         const budget = shoes.filter((s) => {
-            const rub = parseInt(
-                s.price?.replace(/[^0-9]/g, "") || "999999"
+            const price = parseInt(
+                s.price?.replace(/[$,]/g, "") || "999"
             );
-            return rub < 150 * 95; // ~ under $150 equivalent in RUB
+            return price < 150;
         });
         return [nike, newBalance, budget];
     }, []);
@@ -291,6 +289,7 @@ export default function ShoeGrid() {
                 isZoomedIn={isZoomedIn}
                 hasActiveSelection={hasActiveSelection}
                 activeShoe={activeShoe}
+                isHoveringActive={isHoveringActive}
                 nikeFilter={nikeFilter}
                 onFilterChange={handleFilterChange}
             />

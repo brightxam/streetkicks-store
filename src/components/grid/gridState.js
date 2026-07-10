@@ -9,6 +9,9 @@ export const rigState = {
     zoom: CONFIG.zoomOut,
     isDragging: false,
     activeId: null,
+    // True while the pointer is hovering the currently-active (selected) tile.
+    // Used to reveal the full detail panel and trigger the 360 spin.
+    hoveredActive: false,
 };
 
 // --- HELPER: Grid Dimensions ---

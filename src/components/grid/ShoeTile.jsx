@@ -37,6 +37,9 @@ export function ShoeTile({
     const transitionZ = useRef(0);
     const transitionY = useRef(0);
     const breathScale = useRef(1);
+    // 360 spin-on-hover (independent from the tilt rotation applied to the group)
+    const spinAngle = useRef(0);
+    const spinTime = useRef(0);
     // Animated position for filter transitions
     const animatedPos = useRef({
         x: basePos.x,
@@ -315,6 +318,19 @@ export function ShoeTile({
             rotationY.current,
             0
         );
+        // --- 7b. 360 spin when the active/selected tile is hovered ---
+        const shouldSpin =
+            isFocusMode && isActive && isHovered && !rigState.isDragging;
+        if (shouldSpin) {
+            spinTime.current += delta;
+            spinAngle.current = spinTime.current * 3.4; // ~0.55 rotations/sec
+        } else {
+            spinTime.current = 0;
+            easing.damp(spinAngle, "current", 0, 0.25, delta);
+        }
+        if (imageRef.current) {
+            imageRef.current.rotation.y = spinAngle.current;
+        }
         if (imageRef.current) {
             // Update shader uniforms
             imageRef.current.material.uTime =
@@ -432,8 +448,16 @@ export function ShoeTile({
     return (
         <group ref={ref}>
             <mesh
-                onPointerOver={() => setHovered(true)}
-                onPointerOut={() => setHovered(false)}
+                onPointerOver={() => {
+                    setHovered(true);
+                    if (rigState.activeId === index)
+                        rigState.hoveredActive = true;
+                }}
+                onPointerOut={() => {
+                    setHovered(false);
+                    if (rigState.activeId === index)
+                        rigState.hoveredActive = false;
+                }}
                 onClick={handleClick}
             >
                 <planeGeometry
