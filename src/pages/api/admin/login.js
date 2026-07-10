@@ -1,5 +1,9 @@
-import { serialize } from "cookie";
-import { verifyPassword, getSessionToken, ADMIN_COOKIE_NAME } from "@/lib/adminAuth";
+import {
+  verifyPassword,
+  getSessionToken,
+  ADMIN_COOKIE_NAME,
+  serializeCookie,
+} from "@/lib/adminAuth";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -13,7 +17,7 @@ export default async function handler(req, res) {
   const token = getSessionToken();
   res.setHeader(
     "Set-Cookie",
-    serialize(ADMIN_COOKIE_NAME, token, {
+    serializeCookie(ADMIN_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
