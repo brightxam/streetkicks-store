@@ -182,13 +182,21 @@ export function UnifiedControlBar({
                 </div>
               )}
 
-              {/* Size picker - required before Add to Cart */}
+              {/* Size picker - required before Add to Cart.
+                  Kept to a single row (no wrap) on every screen size; if
+                  there isn't room for all chips, the row scrolls
+                  horizontally instead of breaking onto a second line. */}
               <div
+                className="size-picker-row"
                 style={{
                   display: "flex",
                   gap: "5px",
-                  flexWrap: "wrap",
-                  padding: "0 4px",
+                  flexWrap: "nowrap",
+                  padding: "0 4px 4px",
+                  overflowX: "auto",
+                  WebkitOverflowScrolling: "touch",
+                  scrollbarWidth: "none",
+                  maxWidth: "100%",
                 }}
               >
                 {SIZES.map((sz) => (
@@ -478,13 +486,19 @@ export function UnifiedControlBar({
             font-size: 11px !important;
           }
           .size-chip {
-            padding: 5px 8px !important;
+            padding: 5px 7px !important;
             font-size: 11px !important;
-            min-width: 26px !important;
+            min-width: 24px !important;
+          }
+          .size-picker-row {
+            gap: 4px !important;
           }
           .mobile-filters {
             bottom: 60px !important;
           }
+        }
+        .size-picker-row::-webkit-scrollbar {
+          display: none;
         }
       `}</style>
     </div>
@@ -667,6 +681,7 @@ function SizeChip({ children, isActive, onClick }) {
         fontWeight: 600,
         cursor: "pointer",
         minWidth: "30px",
+        flexShrink: 0,
         textAlign: "center",
         transition: "background 0.15s ease, color 0.15s ease, border 0.15s ease",
       }}
