@@ -9,8 +9,9 @@ import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { Leva } from "leva";
 // --- REAL DATA IMPORT ---
-import shoes from "../../../backend/shoes.json";
+import rawShoes from "../../../backend/shoes.json";
 import MiniMap from "../MiniMap";
+import { usdToRubLabel } from "@/lib/currency";
 import { DEFAULT_CONFIG, CONFIG } from "./gridConfig";
 import { rigState, calculateGridDimensions, EMPTY_COLORS, matchesFilter } from "./gridState";
 import { useGridConfig } from "./useGridConfig";
@@ -20,6 +21,14 @@ import { UnifiedControlBar } from "../GridUI";
 import Header from "../Header";
 import { TopologyBackground } from "../TopologyBackground";
 import "../HoloCardMaterial"; // Registers <holoCardMaterial /> with R3F
+
+// Convert demo USD-style prices to RUB once at load time; every
+// downstream component (3D tile labels, cart, checkout) uses this
+// already-converted `price` field.
+const shoes = rawShoes.map((s) => ({
+    ...s,
+    price: usdToRubLabel(s.price),
+}));
 
 // --- PRELOAD ALL TEXTURES ---
 // This ensures all shoe images are cached before switching collections
@@ -106,13 +115,21 @@ export default function ShoeGrid() {
                 product_url: `${s.product_url}-dup-${i}`,
             })),
         ];
-        // Under $150 (all brands)
-        const budget = shoes.filter((s) => {
-            const price = parseInt(
-                s.price?.replace(/[$,]/g, "") || "999"
-            );
-            return price < 150;
-        });
+        // Under $150 (all brands) - threshold is evaluated against the
+        // original USD demo price (rawShoes), since `shoes` has already
+        // been converted to RUB display strings by this point.
+        const budgetIndices = new Set(
+            rawShoes
+                .map((s, i) => ({
+                    i,
+                    price: parseInt(
+                        s.price?.replace(/[$,]/g, "") || "999"
+                    ),
+                }))
+                .filter((x) => x.price < 150)
+                .map((x) => x.i)
+        );
+        const budget = shoes.filter((_, i) => budgetIndices.has(i));
         return [nike, newBalance, budget];
     }, []);
     // --- Grid Stack State ---
