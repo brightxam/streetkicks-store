@@ -2,16 +2,14 @@ import React, {
     useMemo,
     useState,
     useEffect,
+    useRef,
     Suspense,
 } from "react";
 import { Canvas } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
 import * as THREE from "three";
 import { Leva } from "leva";
-// --- REAL DATA IMPORT ---
-import rawShoes from "../../../backend/shoes.json";
 import MiniMap from "../MiniMap";
-import { usdToRubLabel } from "@/lib/currency";
 import { DEFAULT_CONFIG, CONFIG } from "./gridConfig";
 import { rigState, calculateGridDimensions, EMPTY_COLORS, matchesFilter } from "./gridState";
 import { useGridConfig } from "./useGridConfig";
@@ -22,22 +20,47 @@ import Header from "../Header";
 import { TopologyBackground } from "../TopologyBackground";
 import "../HoloCardMaterial"; // Registers <holoCardMaterial /> with R3F
 
-// Convert demo USD-style prices to RUB once at load time; every
-// downstream component (3D tile labels, cart, checkout) uses this
-// already-converted `price` field.
-const shoes = rawShoes.map((s) => ({
-    ...s,
-    price: usdToRubLabel(s.price),
-}));
-
-// --- PRELOAD ALL TEXTURES ---
-// This ensures all shoe images are cached before switching collections
-shoes.forEach((shoe) => {
-    useTexture.preload(shoe.image_url);
-});
+// Products under this RUB amount count as the "Under $150" budget tier
+// (kept as a RUB threshold now that the catalog is priced in RUB).
+const BUDGET_THRESHOLD_RUB = 14250; // ~$150 at the demo USD_TO_RUB rate
 
 // --- MAIN EXPORT ---
 export default function ShoeGrid() {
+    // --- Product catalog, fetched at runtime from the admin-editable DB ---
+    // (falls back to nothing rendered until loaded - see loading guard below)
+    const [shoes, setShoes] = useState([]);
+    const [shoesLoaded, setShoesLoaded] = useState(false);
+    const [loadError, setLoadError] = useState(null);
+    const texturesPreloaded = useRef(false);
+
+    useEffect(() => {
+        let cancelled = false;
+        fetch("/api/products")
+            .then((res) => res.json())
+            .then((data) => {
+                if (cancelled) return;
+                const list = data.shoes || [];
+                setShoes(list);
+                setShoesLoaded(true);
+                if (!texturesPreloaded.current) {
+                    texturesPreloaded.current = true;
+                    list.forEach((shoe) => {
+                        if (shoe.image_url) useTexture.preload(shoe.image_url);
+                    });
+                }
+            })
+            .catch((err) => {
+                if (!cancelled) {
+                    console.error("Failed to load products:", err);
+                    setLoadError("Не удалось загрузить каталог. Обновите страницу.");
+                    setShoesLoaded(true);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     const [zoomTarget, setZoomTarget] = useState(null);
     const [initialZoom] = useState(DEFAULT_CONFIG.zoomOut);
     const [currentZoom, setCurrentZoom] = useState(
@@ -115,35 +138,32 @@ export default function ShoeGrid() {
                 product_url: `${s.product_url}-dup-${i}`,
             })),
         ];
-        // Under $150 (all brands) - threshold is evaluated against the
-        // original USD demo price (rawShoes), since `shoes` has already
-        // been converted to RUB display strings by this point.
-        const budgetIndices = new Set(
-            rawShoes
-                .map((s, i) => ({
-                    i,
-                    price: parseInt(
-                        s.price?.replace(/[$,]/g, "") || "999"
-                    ),
-                }))
-                .filter((x) => x.price < 150)
-                .map((x) => x.i)
+        // Under $150 (all brands), evaluated against the RUB price.
+        const budget = shoes.filter(
+            (s) => (s.price_rub ?? Infinity) < BUDGET_THRESHOLD_RUB
         );
-        const budget = shoes.filter((_, i) => budgetIndices.has(i));
         return [nike, newBalance, budget];
-    }, []);
+    }, [shoes]);
     // --- Grid Stack State ---
     // Instead of one list of items, we keep a stack of "Rendered Layers".
     // This allows us to have one layer exiting and one layer entering simultaneously.
-    // Initial grid uses Nike collection (index 0)
-    const [gridLayers, setGridLayers] = useState(() => [
-        {
-            id: "init",
-            items: shoes.filter((s) => s.brand === "Nike"),
-            mode: "enter", // 'enter' | 'exit'
-            startTime: 0,
-        },
-    ]);
+    // Initial grid uses Nike collection (index 0). Starts empty and is
+    // populated once the catalog has loaded from the API.
+    const [gridLayers, setGridLayers] = useState([]);
+    const initializedRef = useRef(false);
+    useEffect(() => {
+        if (initializedRef.current || shoes.length === 0) return;
+        initializedRef.current = true;
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time initial grid population once the async product fetch resolves, no alternative
+        setGridLayers([
+            {
+                id: "init",
+                items: shoes.filter((s) => s.brand === "Nike"),
+                mode: "enter",
+                startTime: 0,
+            },
+        ]);
+    }, [shoes]);
     const [activeCollectionIdx, setActiveCollectionIdx] =
         useState(0);
     const handleCollectionSwitch = (index) => {
@@ -208,12 +228,13 @@ export default function ShoeGrid() {
     const activeLayer = gridLayers[gridLayers.length - 1];
     // Calculate filtered item count for Nike collection
     const filteredItemCount = useMemo(() => {
+        if (!activeLayer) return 0;
         if (activeCollectionIdx !== 0)
             return activeLayer.items.length;
         return activeLayer.items.filter((item) =>
             matchesFilter(item, nikeFilter, colorFilter)
         ).length;
-    }, [activeLayer.items, activeCollectionIdx, nikeFilter, colorFilter]);
+    }, [activeLayer, activeCollectionIdx, nikeFilter, colorFilter]);
 
     const activeDims = calculateGridDimensions(
         filteredItemCount
@@ -221,9 +242,40 @@ export default function ShoeGrid() {
 
     // Resolve the currently active (zoomed-in) shoe's data for Add to Cart
     const activeShoe =
-        hasActiveSelection && rigState.activeId !== null
+        hasActiveSelection && rigState.activeId !== null && activeLayer
             ? activeLayer.items[rigState.activeId]
             : null;
+
+    if (!shoesLoaded || gridLayers.length === 0) {
+        return (
+            <div
+                style={{
+                    width: "100vw",
+                    height: "100vh",
+                    backgroundColor: "#f0f0f0",
+                    position: "relative",
+                    overflow: "hidden",
+                }}
+            >
+                <Header />
+                <div
+                    style={{
+                        position: "absolute",
+                        inset: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontFamily:
+                            "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                        fontSize: "13px",
+                        color: "#999",
+                    }}
+                >
+                    {loadError || "Загрузка магазина…"}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div
