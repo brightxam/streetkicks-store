@@ -37,9 +37,10 @@ export function CartProvider({ children }) {
     } catch (e) {}
   }, [items, hydrated]);
 
-  const addItem = useCallback((shoe) => {
+  const addItem = useCallback((shoe, size) => {
     if (!shoe) return;
-    const id = shoe.product_url || shoe.title;
+    const baseId = shoe.product_url || shoe.title;
+    const id = size ? `${baseId}__${size}` : baseId;
     setItems((prev) => {
       const existing = prev.find((it) => it.id === id);
       if (existing) {
@@ -55,6 +56,7 @@ export function CartProvider({ children }) {
           price: shoe.price || null,
           image_url: shoe.image_url,
           brand: shoe.brand,
+          size: size || null,
           qty: 1,
         },
       ];
