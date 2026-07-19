@@ -197,6 +197,14 @@ export function UnifiedControlBar({
                   WebkitOverflowScrolling: "touch",
                   scrollbarWidth: "none",
                   maxWidth: "100%",
+                  // The 3D canvas wrapper sets touchAction: "none" so drag-
+                  // to-pan gestures don't scroll the page. Touch-action is
+                  // computed as the intersection of an element and its
+                  // ancestors, so without an explicit opt-back-in here,
+                  // that "none" can suppress a real finger-swipe on this
+                  // row even though mouse/programmatic scrolling still
+                  // works fine.
+                  touchAction: "pan-x",
                 }}
               >
                 {SIZES.map((sz) => (
